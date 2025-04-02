@@ -1,3 +1,4 @@
+  -- Update the membership plan and expiry date
 DELIMITER $$
 
 CREATE PROCEDURE sp_update_membership_plan (
