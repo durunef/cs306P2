@@ -1,96 +1,54 @@
-DROP TRIGGER IF EXISTS trg_prevent_overbooking;
+DROP TRIGGER IF EXISTS trg_verify_payment_amount;
 DELIMITER $$
 
-CREATE TRIGGER trg_prevent_overbooking
-BEFORE INSERT ON Attendance
+CREATE TRIGGER trg_verify_payment_amount
+BEFORE INSERT ON Payment
 FOR EACH ROW
 BEGIN
-    DECLARE current_count INT;
-    DECLARE class_capacity INT;
+    DECLARE plan_cost DECIMAL(10,2);
+    
+    -- Get the cost of the plan based on the Plan_ID of the member
+    SELECT Cost INTO plan_cost
+    FROM Membership_Plan
+    WHERE Plan_ID = (SELECT Plan_ID FROM Member WHERE Member_ID = NEW.Member_ID);
 
-    -- Only enforce if the new status is 'Attended'
-    IF NEW.Status = 'Attended' THEN
-        -- Count how many 'Attended' records already exist
-        SELECT COUNT(*) INTO current_count
-        FROM Attendance
-        WHERE Class_ID = NEW.Class_ID AND Date = NEW.Date AND Status = 'Attended';
-
-        -- Get the class capacity
-        SELECT Capacity INTO class_capacity
-        FROM Class
-        WHERE Class_ID = NEW.Class_ID;
-
-        -- If the class is full, block the insert
-        IF current_count >= class_capacity THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Cannot add attendance: Class is already full.';
-        END IF;
+    -- Compare the payment amount with the plan's cost
+    IF NEW.Amount != plan_cost THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Payment amount does not match the cost of the selected plan.';
     END IF;
 END$$
 
 DELIMITER ;
+-- =====================================
+-- 🧪 TEST: Insert Payment Records
+-- =====================================
 
--- 🌟 STEP 0: Setup - Temporarily set class capacity to 2 for testing
-UPDATE Class
-SET Capacity = 2
-WHERE Class_ID = 301;
+-- Step 1: Before Trigger Test – View Payment table
+-- Checking the Payment table before inserting any records
+-- Step 3: Insert Correct Payment Record (will succeed)
+-- This should succeed as the amount (1400.00) matches the plan cost for Member_ID 101 (Plan_ID = 2, cost = 1400.00)
+INSERT INTO Payment (Member_ID, Amount, Date, Payment_Method)
+VALUES (101, 1400.00, '2025-03-01', 'Credit Card');
 
--- ✅ Check class details
-SELECT Class_ID, Class_Name, Capacity
-FROM Class
-WHERE Class_ID = 301;
+-- Step 2: Insert Incorrect Payment Record (will trigger error)
+-- This should raise an error as the amount (1000.00) does not match the actual cost (1400.00 for plan 2)
+INSERT INTO Payment (Member_ID, Amount, Date, Payment_Method)
+VALUES (101, 1000.00, '2025-03-01', 'Credit Card');
 
-
--- 🌟 STEP 1: Cleanup - Remove any previous test attendance data
-DELETE FROM Attendance
-WHERE Class_ID = 301 AND Date = '2025-04-10';
-
--- ✅ Confirm cleanup
-SELECT COUNT(*) AS attendees_after_cleanup
-FROM Attendance
-WHERE Class_ID = 301 AND Date = '2025-04-10' AND Status = 'Attended';
+-- Expected Output: 
+-- ERROR 1644 (45000): Payment amount does not match the cost of the selected plan.
 
 
--- 🌟 STEP 2: Insert 2 valid 'Attended' records (these should succeed)
-INSERT INTO Attendance (Member_ID, Class_ID, Date, Status)
-VALUES 
-(101, 301, '2025-04-10', 'Attended'),
-(102, 301, '2025-04-10', 'Attended');
 
-INSERT INTO Attendance (Member_ID, Class_ID, Date, Status)
-VALUES (104, 301, '2025-04-10', 'Missed');
+-- Step 4: After Trigger Test – View Payment table again
+-- Checking the Payment table after the correct insert (should have a new row now)
+SELECT * FROM Payment;
 
--- ✅ Check count after valid inserts
-SELECT COUNT(*) AS attendees_after_2_inserts
-FROM Attendance
-WHERE Class_ID = 301 AND Date = '2025-04-10' AND Status = 'Attended';
-
--- ✅ View current attendance records
-SELECT *
-FROM Attendance
-WHERE Class_ID = 301 AND Date = '2025-04-10';
-
-
--- 🌟 STEP 3: Attempt to insert a 3rd 'Attended' record (should fail due to trigger)
--- 🛑 This should be blocked by trg_prevent_overbooking
-INSERT INTO Attendance (Member_ID, Class_ID, Date, Status)
-VALUES (103, 301, '2025-04-10', 'Attended');
-
-
--- 🌟 STEP 4: Insert a 'Missed' record (should succeed)
--- ✅ This should NOT be blocked since it doesn't count against capacity
-INSERT INTO Attendance (Member_ID, Class_ID, Date, Status)
-VALUES (104, 301, '2025-04-10', 'Missed');
-
-
--- 🌟 STEP 5: Final State Check
-
--- ✅ View all attendance for this class and date
-SELECT *
-FROM Attendance
-WHERE Class_ID = 301 AND Date = '2025-04-10';
-
--- ✅ Final count of 'Attended' records (should still be 2)
-SELECT COUNT(*) AS final_attended_count
-FROM Attendance
-WHERE Class_ID = 301 AND Date = '2025-04-10' AND Status = 'Attended';
+-- =====================================
+-- Explanation:
+-- 1. The trigger `trg_verify_payment_amount` ensures that whenever a new payment is inserted,
+--    it checks if the `Amount` matches the cost of the selected plan for the member.
+-- 2. The first insert (with incorrect payment) will fail because the amount (1000.00) doesn't match the plan's cost (1400.00).
+-- 3. The second insert (with correct payment) will succeed as the payment amount matches the plan's cost.
+-- 4. After the test, w
