@@ -1,5 +1,9 @@
 -- Register a New Member --
 
+-- This stored procedure handles new member registration in the gym management system
+-- It takes member details (name, age, gender, contact info, membership plan) and inserts them into the Member table
+-- Returns the newly created member ID
+
 DELIMITER $$
 
 CREATE PROCEDURE sp_register_member (
@@ -23,10 +27,10 @@ DELIMITER ;
 
 
 CALL sp_register_member(
-    'Mert Can',
-    26,
-    'Male',
-    'mert.can@example.com',
-    2
+    'Mert Can', --name
+    26, --age
+    'Male', --gender
+    'mert.can@sabanciuniv.edu', --contact info
+    2 --plan id
 );
-SELECT * FROM Member ORDER BY Member_ID DESC LIMIT 5;
+SELECT * FROM Member ORDER BY Member_ID DESC LIMIT 5; --this is to check if the member is registered

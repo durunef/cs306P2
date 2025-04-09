@@ -1,4 +1,9 @@
-  -- Update the payment
+-- Update the payment --
+
+-- This stored procedure handles payment processing for gym members
+-- It records payment details (member ID, amount, date, payment method) in the Payment table
+-- Returns the payment ID and confirmation message after successful insertion
+
 DROP PROCEDURE IF EXISTS sp_add_payment;
 DELIMITER $$
 
@@ -21,9 +26,9 @@ END$$
 DELIMITER ;
 
 CALL sp_add_payment(
-    103,              -- Member_ID
-    2700.00,          -- Amount
-    '2025-04-09',     -- Date
-    'Credit Card'     -- Payment Method
+    103, -- Member_ID
+    2700.00, -- Amount
+    '2025-04-09', -- Date
+    'Credit Card' -- Payment Method
 );
-SELECT * FROM Payment ORDER BY Payment_ID DESC LIMIT 5;
+SELECT * FROM Payment ORDER BY Payment_ID DESC LIMIT 5; --this is to check if the payment is recorded
