@@ -20,3 +20,13 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+CALL sp_register_member(
+    'Mert Can',
+    26,
+    'Male',
+    'mert.can@example.com',
+    2
+);
+SELECT * FROM Member ORDER BY Member_ID DESC LIMIT 5;
