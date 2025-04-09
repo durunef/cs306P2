@@ -1,24 +1,29 @@
-  -- Update the membership plan and expiry date
+  -- Update the payment
+DROP PROCEDURE IF EXISTS sp_add_payment;
 DELIMITER $$
 
-CREATE PROCEDURE sp_update_membership_plan (
+CREATE PROCEDURE sp_add_payment (
     IN p_member_id INT,
-    IN p_new_plan_id INT
+    IN p_amount DECIMAL(10,2),
+    IN p_date DATE,
+    IN p_method VARCHAR(50)
 )
 BEGIN
-    -- Update the member's plan
-    UPDATE Member
-    SET Plan_ID = p_new_plan_id
-    WHERE Member_ID = p_member_id;
+    INSERT INTO Payment (
+        Member_ID, Amount, Date, Payment_Method
+    ) VALUES (
+        p_member_id, p_amount, p_date, p_method
+    );
 
-    -- Update the membership_expiry based on new plan duration
-    UPDATE Member AS m
-    JOIN Membership_Plan AS p ON m.Plan_ID = p.Plan_ID
-    SET m.membership_expiry = DATE_ADD(CURDATE(), INTERVAL p.Duration MONTH)
-    WHERE m.Member_ID = p_member_id;
-
-    -- Return confirmation
-    SELECT 'Membership plan updated successfully' AS message;
+    SELECT LAST_INSERT_ID() AS payment_id, 'Payment recorded successfully' AS message;
 END$$
 
 DELIMITER ;
+
+CALL sp_add_payment(
+    103,              -- Member_ID
+    2700.00,          -- Amount
+    '2025-04-09',     -- Date
+    'Credit Card'     -- Payment Method
+);
+SELECT * FROM Payment ORDER BY Payment_ID DESC LIMIT 5;
