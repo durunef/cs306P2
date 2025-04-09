@@ -1,6 +1,7 @@
 -- Register a New Member --
 
 DELIMITER $$
+
 CREATE PROCEDURE sp_register_member (
     IN p_name VARCHAR(100),
     IN p_age INT,
@@ -17,4 +18,5 @@ BEGIN
 
     SELECT LAST_INSERT_ID() AS new_member_id;
 END$$
+
 DELIMITER ;
