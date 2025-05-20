@@ -3,11 +3,7 @@
 $mysql_host = 'localhost';
 $mysql_user = 'root';
 $mysql_pass = '';
-$mysql_db = 'fitness_center';
-
-// MongoDB Configuration
-$mongo_uri = 'mongodb://localhost:27017';
-$mongo_db = 'fitness_center';
+$mysql_db = 'GymDB';
 
 try {
     // MySQL Connection
@@ -15,10 +11,6 @@ try {
     if ($mysql_conn->connect_error) {
         throw new Exception("MySQL Connection failed: " . $mysql_conn->connect_error);
     }
-
-    // MongoDB Connection
-    $mongo_client = new MongoDB\Client($mongo_uri);
-    $mongo_db = $mongo_client->selectDatabase($mongo_db);
     
 } catch (Exception $e) {
     die("Connection failed: " . $e->getMessage());
@@ -30,7 +22,18 @@ function get_mysql_connection() {
     return $mysql_conn;
 }
 
-// Function to get MongoDB database
+// MongoDB Configuration
+$mongo_uri = 'mongodb://localhost:27017';
+$mongo_db = 'GymDB';
+
+try {
+    $mongo_client = new MongoDB\Client($mongo_uri);
+    $mongo_db = $mongo_client->selectDatabase($mongo_db);
+} catch (Exception $e) {
+    // Log MongoDB connection error but don't stop execution
+    error_log("MongoDB Connection failed: " . $e->getMessage());
+}
+
 function get_mongo_db() {
     global $mongo_db;
     return $mongo_db;

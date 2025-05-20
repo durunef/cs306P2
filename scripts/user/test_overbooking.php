@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../config/database.php';
 
 $mysql_conn = get_mysql_connection();
@@ -6,10 +9,10 @@ $message = '';
 $message_type = '';
 
 // Get available classes for testing
-$classes_query = "SELECT c.Class_ID, c.Name, c.Capacity, 
+$classes_query = "SELECT c.Class_ID, c.Class_Name as Name, c.Capacity, 
     (SELECT COUNT(*) FROM Attendance a WHERE a.Class_ID = c.Class_ID AND a.Date = CURDATE() AND a.Status = 'Attended') as current_attendance
     FROM Class c
-    ORDER BY c.Name";
+    ORDER BY c.Class_Name";
 $classes_result = $mysql_conn->query($classes_query);
 
 // Handle test submission

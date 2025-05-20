@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../config/database.php';
 
 $mysql_conn = get_mysql_connection();
@@ -6,7 +9,7 @@ $message = '';
 $message_type = '';
 
 // Get available membership plans
-$plans_query = "SELECT Plan_ID, Name, Cost FROM Membership_Plan ORDER BY Cost";
+$plans_query = "SELECT Plan_ID, Plan_Name, Cost FROM Membership_Plan ORDER BY Cost";
 $plans_result = $mysql_conn->query($plans_query);
 
 // Handle form submission
@@ -103,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="">Select a plan...</option>
                                     <?php while ($plan = $plans_result->fetch_assoc()): ?>
                                         <option value="<?php echo $plan['Plan_ID']; ?>">
-                                            <?php echo htmlspecialchars($plan['Name']); ?> 
+                                            <?php echo htmlspecialchars($plan['Plan_Name']); ?> 
                                             ($<?php echo number_format($plan['Cost'], 2); ?>)
                                         </option>
                                     <?php endwhile; ?>

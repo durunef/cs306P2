@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../config/database.php';
 
 $mysql_conn = get_mysql_connection();
@@ -6,10 +9,7 @@ $message = '';
 $message_type = '';
 
 // Get members with their plan costs
-$members_query = "SELECT m.Member_ID, m.Name, mp.Cost 
-                 FROM Member m 
-                 JOIN Membership_Plan mp ON m.Plan_ID = mp.Plan_ID 
-                 ORDER BY m.Name";
+$members_query = "SELECT m.Member_ID, m.Name, mp.Cost FROM Member m JOIN Membership_Plan mp ON m.Plan_ID = mp.Plan_ID ORDER BY m.Name";
 $members_result = $mysql_conn->query($members_query);
 
 // Handle form submission

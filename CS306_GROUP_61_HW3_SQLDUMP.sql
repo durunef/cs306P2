@@ -110,7 +110,7 @@ INSERT INTO Trainer (Trainer_ID, Name, Specialization, Contact_Info, Salary) VAL
 
 -- 🕒 Insert Classes
 INSERT INTO Class (Class_ID, Class_Name, Trainer_ID, Schedule, Capacity) VALUES
-(301, 'Morning Yoga', 201, '08:00:00', 20),
+(301, 'Morning Yoga', 201, '08:00:00', 2),
 (302, 'Intense Workout', 202, '10:30:00', 25),
 (303, 'Evening Cardio', 203, '18:00:00', 30),
 (304, 'Pilates Session', 204, '09:00:00', 18),
