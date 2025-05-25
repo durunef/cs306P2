@@ -1,93 +1,90 @@
 <?php
-// MongoDB connection check
-try {
-    $mongoManager = new MongoDB\Driver\Manager("mongodb://127.0.0.1:27017");
-    $mongoManager->executeCommand("admin", new MongoDB\Driver\Command(["ping" => 1]));
-    $mongo_status = "<div class='alert alert-success'>✅ MongoDB connection successful.</div>";
-} catch (MongoDB\Driver\Exception\Exception $e) {
-    $mongo_status = "<div class='alert alert-danger'>❌ MongoDB connection failed: " . $e->getMessage() . "</div>";
-}
+require_once('../config/database.php');
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fitness Center - User Dashboard</title>
+    <title>Gym Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="index.php">Fitness Center</a>
+            <a class="navbar-brand" href="index.php">Gym Management</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="index.php">Home</a>
+                <a class="nav-link" href="dashboard.php">Tables</a>
+                <a class="nav-link" href="support_index.php">Support</a>
+            </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <h1>Welcome to Fitness Center</h1>
-        <?php echo $mongo_status; ?>
-
-        <!-- Trigger Tests -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Trigger Tests</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <a href="test_overbooking.php" class="text-decoration-none">Test Overbooking Prevention</a>
-                            </li>
-                            <li class="list-group-item">
-                                <a href="test_payment_verification.php" class="text-decoration-none">Test Payment Verification</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
+    <div class="container mt-5">
+        <h1 class="mb-4">Gym Management System</h1>
+        
+        <div class="row">
             <!-- Stored Procedures -->
-            <div class="col-md-6">
-                <div class="card mb-4">
+            <div class="col-md-6 mb-4">
+                <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Stored Procedures</h5>
+                        <h3>Stored Procedures</h3>
                     </div>
                     <div class="card-body">
-                        <ul class="list-group list-group-flush">
+                        <ul class="list-group">
                             <li class="list-group-item">
-                                <a href="register_member.php" class="text-decoration-none">Register New Member</a>
+                                <h5>Register Member</h5>
+                                <p>Add new members to the system</p>
+                                <a href="sp_register_member.php" class="btn btn-primary">Go to Registration</a>
                             </li>
                             <li class="list-group-item">
-                                <a href="add_payment.php" class="text-decoration-none">Add Payment</a>
+                                <h5>Add Payment</h5>
+                                <p>Process member payments</p>
+                                <a href="sp_add_payment.php" class="btn btn-primary">Go to Payments</a>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Support Tickets -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card mb-4">
+            <!-- Triggers -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Support Tickets</h5>
+                        <h3>Triggers</h3>
                     </div>
                     <div class="card-body">
-                        <ul class="list-group list-group-flush">
+                        <ul class="list-group">
                             <li class="list-group-item">
-                                <a href="support/ticket_list.php" class="text-decoration-none">🎫 View Support Tickets</a>
+                                <h5>Attendance Trigger</h5>
+                                <p>Test class capacity limits</p>
+                                <a href="trigger_attendance.php" class="btn btn-primary">Test Attendance</a>
                             </li>
                             <li class="list-group-item">
-                                <a href="support/create_ticket.php" class="text-decoration-none">📝 Create New Ticket</a>
+                                <h5>Payment Verification</h5>
+                                <p>Test payment amount verification</p>
+                                <a href="trigger_payment_check.php" class="btn btn-primary">Test Payment</a>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </div>
 
+            <!-- Support System -->
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Support System</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Need help? Access our support system to create or view tickets.</p>
+                        <a href="support_index.php" class="btn btn-success">Go to Support</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
