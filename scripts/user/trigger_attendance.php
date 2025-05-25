@@ -132,6 +132,46 @@ $selected_status = isset($_POST['status']) ? $_POST['status'] : 'Attended';
                             <p class="mb-0">2. Duplicate Prevention: Prevents the same member from being marked twice for the same class on the same date.</p>
                         </div>
 
+                        <!-- Enhanced Test Cases Section -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Attendance Trigger Test Cases</h5>
+                                <p class="card-text">Click the buttons below to test different scenarios of the attendance triggers:</p>
+                                
+                                <div class="mb-4">
+                                    <h6>Case 1: Normal Attendance</h6>
+                                    <p class="text-muted small">This case attempts to mark a normal attendance for a member in a class that has available capacity. The trigger should allow this.</p>
+                                    <button type="button" class="btn btn-outline-success mb-2" onclick="testCase1()">
+                                        Test Normal Attendance
+                                    </button>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6>Case 2: Duplicate Attendance</h6>
+                                    <p class="text-muted small">This case attempts to mark attendance for a member who is already marked for the same class on the same date. The trigger should prevent this.</p>
+                                    <button type="button" class="btn btn-outline-danger mb-2" onclick="testCase2()">
+                                        Test Duplicate Attendance
+                                    </button>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6>Case 3: Class Capacity Check</h6>
+                                    <p class="text-muted small">This case attempts to mark attendance for a class that has reached its maximum capacity. The trigger should prevent this.</p>
+                                    <button type="button" class="btn btn-outline-warning mb-2" onclick="testCase3()">
+                                        Test Full Class
+                                    </button>
+                                </div>
+
+                                <!-- Results Display Section -->
+                                <div id="testResults" class="alert alert-info d-none">
+                                    <h6>Test Case Results:</h6>
+                                    <p id="testDescription" class="mb-2"></p>
+                                    <p id="expectedResult" class="mb-2"></p>
+                                    <p id="actualResult" class="mb-0"></p>
+                                </div>
+                            </div>
+                        </div>
+
                         <?php if ($message): ?>
                             <div class="alert <?php echo $message_type == 'danger' ? 'alert-error' : 'alert-success'; ?>">
                                 <?php echo $message; ?>
@@ -212,6 +252,73 @@ $selected_status = isset($_POST['status']) ? $_POST['status'] : 'Attended';
                 form.submit();
             });
         });
+
+        function showTestResults(description, expected, actual) {
+            const resultsDiv = document.getElementById('testResults');
+            document.getElementById('testDescription').textContent = description;
+            document.getElementById('expectedResult').textContent = 'Expected: ' + expected;
+            document.getElementById('actualResult').textContent = 'Action: ' + actual;
+            resultsDiv.classList.remove('d-none');
+        }
+
+        function testCase1() {
+            const memberSelect = document.getElementById('member_id');
+            const classSelect = document.getElementById('class_id');
+            memberSelect.selectedIndex = 1;
+            classSelect.selectedIndex = 1;
+            document.getElementById('status').value = 'Attended';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+            const className = classSelect.options[classSelect.selectedIndex].text;
+            const memberName = memberSelect.options[memberSelect.selectedIndex].text;
+            
+            showTestResults(
+                'Testing normal attendance marking',
+                'Attendance should be accepted as this is the first attendance for this member in this class today',
+                'Form filled with member "' + memberName + '" for class "' + className + '". Submit the form to see the trigger response.'
+            );
+        }
+
+        function testCase2() {
+            // First set up a normal attendance
+            testCase1();
+            
+            showTestResults(
+                'Testing duplicate attendance prevention',
+                'Attendance should be rejected as this member is already marked for this class today',
+                'Form filled with same member and class combination. Submit the form to see the trigger response.'
+            );
+        }
+
+        function testCase3() {
+            const classSelect = document.getElementById('class_id');
+            // Find a class that's close to or at capacity
+            let fullClassIndex = 1;
+            for(let i = 0; i < classSelect.options.length; i++) {
+                const option = classSelect.options[i];
+                const text = option.text;
+                if(text.includes('Capacity:') && text.includes('Current Attendance:')) {
+                    const matches = text.match(/Capacity: (\d+), Current Attendance: (\d+)/);
+                    if(matches && matches[1] === matches[2]) {
+                        fullClassIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            classSelect.selectedIndex = fullClassIndex;
+            const memberSelect = document.getElementById('member_id');
+            memberSelect.selectedIndex = 1;
+            document.getElementById('status').value = 'Attended';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+            const className = classSelect.options[classSelect.selectedIndex].text;
+            showTestResults(
+                'Testing class capacity limit',
+                'Attendance should be rejected as the class has reached its maximum capacity',
+                'Form filled for full class "' + className + '". Submit the form to see the trigger response.'
+            );
+        }
     </script>
 </body>
 </html> 

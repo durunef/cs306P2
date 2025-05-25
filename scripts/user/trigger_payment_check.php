@@ -135,6 +135,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <p class="mb-0">This trigger ensures that payment amounts match the member's plan cost. If the payment amount doesn't match the plan cost exactly, the payment will be rejected.</p>
                         </div>
 
+                        <!-- Enhanced Test Cases Section -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Payment Verification Trigger Test Cases</h5>
+                                <p class="card-text">Click the buttons below to test different scenarios of the payment verification trigger:</p>
+                                
+                                <div class="mb-4">
+                                    <h6>Case 1: Correct Payment Amount</h6>
+                                    <p class="text-muted small">This case attempts to make a payment that exactly matches the member's plan cost. The trigger should allow this payment.</p>
+                                    <button type="button" class="btn btn-outline-success mb-2" onclick="testCase1()">
+                                        Test Correct Payment
+                                    </button>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6>Case 2: Payment Amount Too High</h6>
+                                    <p class="text-muted small">This case attempts to make a payment that is higher than the plan cost. The trigger should reject this payment.</p>
+                                    <button type="button" class="btn btn-outline-danger mb-2" onclick="testCase2()">
+                                        Test Overpayment
+                                    </button>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6>Case 3: Payment Amount Too Low</h6>
+                                    <p class="text-muted small">This case attempts to make a payment that is lower than the plan cost. The trigger should reject this payment.</p>
+                                    <button type="button" class="btn btn-outline-danger mb-2" onclick="testCase3()">
+                                        Test Underpayment
+                                    </button>
+                                </div>
+
+                                <!-- Results Display Section -->
+                                <div id="testResults" class="alert alert-info d-none">
+                                    <h6>Test Case Results:</h6>
+                                    <p id="testDescription" class="mb-2"></p>
+                                    <p id="expectedResult" class="mb-2"></p>
+                                    <p id="actualResult" class="mb-0"></p>
+                                </div>
+                            </div>
+                        </div>
+
                         <?php if ($message): ?>
                             <div class="alert <?php echo $message_type == 'danger' ? 'alert-error' : 'alert-success'; ?>">
                                 <?php echo $message; ?>
@@ -208,6 +248,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 amountInput.value = '';
             }
+        }
+
+        function showTestResults(description, expected, actual) {
+            const resultsDiv = document.getElementById('testResults');
+            document.getElementById('testDescription').textContent = description;
+            document.getElementById('expectedResult').textContent = 'Expected: ' + expected;
+            document.getElementById('actualResult').textContent = 'Action: ' + actual;
+            resultsDiv.classList.remove('d-none');
+        }
+
+        function testCase1() {
+            const memberSelect = document.getElementById('member_id');
+            memberSelect.selectedIndex = 1;
+            updateExpectedAmount();
+            document.getElementById('payment_method').value = 'Credit Card';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            const cost = memberSelect.options[memberSelect.selectedIndex].getAttribute('data-cost');
+            showTestResults(
+                'Testing correct payment amount',
+                'Payment should be accepted as it matches the plan cost exactly ($' + cost + ')',
+                'Form filled with correct payment amount. Submit the form to see the trigger response.'
+            );
+        }
+
+        function testCase2() {
+            const memberSelect = document.getElementById('member_id');
+            memberSelect.selectedIndex = 1;
+            const cost = parseFloat(memberSelect.options[memberSelect.selectedIndex].getAttribute('data-cost'));
+            const amountInput = document.getElementById('amount');
+            amountInput.value = (cost * 2).toFixed(2); // Double the required amount
+            document.getElementById('payment_method').value = 'Credit Card';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            showTestResults(
+                'Testing payment amount that is too high',
+                'Payment should be rejected as it exceeds the plan cost',
+                'Form filled with amount $' + amountInput.value + ' (double the required $' + cost.toFixed(2) + '). Submit the form to see the trigger response.'
+            );
+        }
+
+        function testCase3() {
+            const memberSelect = document.getElementById('member_id');
+            memberSelect.selectedIndex = 1;
+            const cost = parseFloat(memberSelect.options[memberSelect.selectedIndex].getAttribute('data-cost'));
+            const amountInput = document.getElementById('amount');
+            amountInput.value = (cost / 2).toFixed(2); // Half the required amount
+            document.getElementById('payment_method').value = 'Credit Card';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            showTestResults(
+                'Testing payment amount that is too low',
+                'Payment should be rejected as it is less than the plan cost',
+                'Form filled with amount $' + amountInput.value + ' (half of the required $' + cost.toFixed(2) + '). Submit the form to see the trigger response.'
+            );
         }
     </script>
 </body>

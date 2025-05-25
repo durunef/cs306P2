@@ -70,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php echo $message; ?>
                         <div class="mt-3">
                             <a href="support_view.php?id=<?php echo $ticket_id; ?>" class="btn btn-primary me-2">View Ticket</a>
-                            <a href="support_create.php" class="btn btn-secondary">Create Another Ticket</a>
+                            <a href="support_create.php" class="btn btn-secondary me-2">Create Another Ticket</a>
+                            <a href="support_index.php" class="btn btn-outline-primary">Return to Tickets List</a>
                         </div>
                     </div>
                 <?php else: ?>
