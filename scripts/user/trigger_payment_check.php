@@ -52,25 +52,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "Successfully added payment record!";
                 $message_type = "success";
                 // Only clear form on success
+                $_POST = array();
                 $selected_member = '';
                 $selected_amount = '';
                 $selected_date = date('Y-m-d');
                 $selected_payment_method = '';
             }
         } catch (Exception $e) {
+            $message_type = "danger";
+            
+            // Specific error handling for payment verification trigger
             if (strpos($e->getMessage(), 'Payment amount does not match') !== false) {
                 $difference = abs($selected_member_cost - $amount);
                 if ($amount > $selected_member_cost) {
-                    $message = "Error: For member {$selected_member_name}, the expected payment amount is \${$selected_member_cost}. " .
-                              "You've entered \${$amount}, which is \${$difference} more than required.";
+                    $message = "Error: Payment amount (\${$amount}) is \${$difference} more than the required amount (\${$selected_member_cost}).";
                 } else {
-                    $message = "Error: For member {$selected_member_name}, the expected payment amount is \${$selected_member_cost}. " .
-                              "You've entered \${$amount}, which is \${$difference} less than required.";
+                    $message = "Error: Payment amount (\${$amount}) is \${$difference} less than the required amount (\${$selected_member_cost}).";
                 }
+            } elseif (strpos($e->getMessage(), 'Member not found') !== false) {
+                $message = "Error: Selected member does not exist or is inactive.";
+            } elseif (strpos($e->getMessage(), 'Invalid payment method') !== false) {
+                $message = "Error: Invalid payment method selected.";
+            } elseif (strpos($e->getMessage(), 'future date') !== false) {
+                $message = "Error: Cannot process payments for future dates.";
             } else {
-                $message = "Error: " . $e->getMessage();
+                $message = "Error processing payment: " . $e->getMessage();
             }
-            $message_type = "danger";
+
+            // Keep form values on error
+            $selected_member = $member_id;
+            $selected_amount = $amount;
+            $selected_date = $date;
+            $selected_payment_method = $payment_method;
         }
     }
 }
@@ -83,18 +96,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Payment Verification - Gym Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .about-trigger-2 {
+            background-color: #E1BEE7;
+            border: 1px solid #CE93D8;
+            color: #6A1B9A;
+        }
+        .btn-dark-purple {
+            background-color: #6A1B9A;
+            border-color: #6A1B9A;
+            color: white;
+        }
+        .btn-dark-purple:hover {
+            background-color: #4A148C;
+            border-color: #4A148C;
+            color: white;
+        }
+        .alert-error {
+            background-color: #FFEBEE;
+            border-color: #FFCDD2;
+            color: #C62828;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">Gym Management</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Home</a>
-                <a class="nav-link" href="dashboard.php">Tables</a>
-                <a class="nav-link" href="support_index.php">Support</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
         <div class="row justify-content-center">
@@ -104,13 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <h5 class="card-title mb-0">Test Payment Verification</h5>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info">
+                        <div class="alert about-trigger-2">
                             <h6>About the Trigger</h6>
                             <p class="mb-0">This trigger ensures that payment amounts match the member's plan cost. If the payment amount doesn't match the plan cost exactly, the payment will be rejected.</p>
                         </div>
 
                         <?php if ($message): ?>
-                            <div class="alert alert-<?php echo $message_type; ?>">
+                            <div class="alert <?php echo $message_type == 'danger' ? 'alert-error' : 'alert-success'; ?>">
                                 <?php echo $message; ?>
                             </div>
                         <?php endif; ?>
@@ -159,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">Process Payment</button>
+                                <button type="submit" class="btn btn-dark-purple">Process Payment</button>
                                 <a href="index.php" class="btn btn-secondary">Back to Dashboard</a>
                             </div>
                         </form>

@@ -12,6 +12,12 @@ $message_type = '';
 $plans_query = "SELECT Plan_ID, Plan_Name, Cost FROM Membership_Plan ORDER BY Cost";
 $plans_result = $mysql_conn->query($plans_query);
 
+// Store plans in array to avoid result set issues
+$plans = array();
+while ($plan = $plans_result->fetch_assoc()) {
+    $plans[] = $plan;
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $_POST['name'];
@@ -31,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = isset($row['message']) ? $row['message'] . " (Member ID: " . $row['new_member_id'] . ")" : "Member registered successfully!";
             $message_type = "success";
             
-            // Clear form data on success
+            // Only clear form data on success
             $_POST = array();
         }
     } catch (mysqli_sql_exception $e) {
@@ -39,8 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = "❌ This email address is already registered. Please use a different email.";
         } else {
             $message = "Error: " . $e->getMessage();
+            // Add more specific error messages based on common cases
+            if (strpos($e->getMessage(), 'plan_id') !== false) {
+                $message .= "\nInvalid membership plan selected.";
+            } elseif (strpos($e->getMessage(), 'age') !== false) {
+                $message .= "\nAge must be between 16 and 100.";
+            }
         }
         $message_type = "danger";
+        // Keep the form values on error
+        $name = $_POST['name'];
+        $age = $_POST['age'];
+        $gender = $_POST['gender'];
+        $contact_info = $_POST['contact_info'];
+        $plan_id = $_POST['plan_id'];
     }
 }
 ?>
@@ -52,18 +70,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register New Member - Gym Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .about-procedure-1 {
+            background-color: #E3F2FD;
+            border: 1px solid #BBDEFB;
+            color: #1565C0;
+        }
+        .btn-dark-blue {
+            background-color: #1565C0;
+            border-color: #1565C0;
+            color: white;
+        }
+        .btn-dark-blue:hover {
+            background-color: #0D47A1;
+            border-color: #0D47A1;
+            color: white;
+        }
+        .alert-error {
+            background-color: #FFEBEE;
+            border-color: #FFCDD2;
+            color: #C62828;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">Gym Management</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Home</a>
-                <a class="nav-link" href="dashboard.php">Tables</a>
-                <a class="nav-link" href="support_index.php">Support</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
         <div class="row justify-content-center">
@@ -73,8 +104,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <h3>Register New Member</h3>
                     </div>
                     <div class="card-body">
+                        <div class="alert about-procedure-1">
+                            <h6>About the Stored Procedure</h6>
+                            <p class="mb-0">This stored procedure handles the complete member registration process by:</p>
+                            <ul class="mb-0">
+                                <li>Validating member information and ensuring unique email addresses</li>
+                                <li>Creating a new member record with the specified membership plan</li>
+                                <li>Generating a unique member ID</li>
+                                <li>Setting up initial member status and registration date</li>
+                            </ul>
+                        </div>
+
                         <?php if ($message): ?>
-                            <div class="alert alert-<?php echo $message_type; ?>">
+                            <div class="alert <?php echo $message_type == 'danger' ? 'alert-error' : 'alert-success'; ?>">
                                 <?php echo $message; ?>
                             </div>
                         <?php endif; ?>
@@ -109,17 +151,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="plan_id" class="form-label">Membership Plan</label>
                                 <select class="form-control" id="plan_id" name="plan_id" required>
                                     <option value="">Select Plan</option>
-                                    <?php while ($plan = $plans_result->fetch_assoc()): ?>
+                                    <?php foreach ($plans as $plan): ?>
                                         <option value="<?php echo $plan['Plan_ID']; ?>" 
                                                 <?php echo (isset($_POST['plan_id']) && $_POST['plan_id'] == $plan['Plan_ID']) ? 'selected' : ''; ?>>
                                             <?php echo $plan['Plan_Name']; ?> - $<?php echo number_format($plan['Cost'], 2); ?>
                                         </option>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <a href="index.php" class="btn btn-secondary">Back</a>
-                                <button type="submit" class="btn btn-primary">Register Member</button>
+                                <button type="submit" class="btn btn-dark-blue">Register Member</button>
                             </div>
                         </form>
                     </div>

@@ -83,16 +83,7 @@ $result = fetchTableData($mysql_conn, $active_tab);
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">Gym Management</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Home</a>
-                <a class="nav-link active" href="dashboard.php">Tables</a>
-                <a class="nav-link" href="support_index.php">Support</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="container-fluid mt-4">
         <div class="row">

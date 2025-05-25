@@ -36,38 +36,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['date_change'])) {
         $status = $_POST['status'];
         $date = $_POST['date'];
 
-        // Validate Member_ID exists
-        $check_member = $mysql_conn->prepare("SELECT COUNT(*) as count FROM Member WHERE Member_ID = ?");
-        $check_member->bind_param('i', $member_id);
-        $check_member->execute();
-        $member_exists = $check_member->get_result()->fetch_assoc()['count'];
-
-        // Validate Class_ID exists
-        $check_class = $mysql_conn->prepare("SELECT COUNT(*) as count FROM Class WHERE Class_ID = ?");
-        $check_class->bind_param('i', $class_id);
-        $check_class->execute();
-        $class_exists = $check_class->get_result()->fetch_assoc()['count'];
-
-        if (!$member_exists) {
-            $message = "Error: Selected member does not exist.";
-            $message_type = "danger";
-        } else if (!$class_exists) {
-            $message = "Error: Selected class does not exist.";
-            $message_type = "danger";
-        } else {
-            try {
-                $insert_query = "INSERT INTO Attendance (Member_ID, Class_ID, Date, Status) VALUES (?, ?, ?, ?)";
-                $stmt = $mysql_conn->prepare($insert_query);
-                $stmt->bind_param('iiss', $member_id, $class_id, $date, $status);
-                
-                if ($stmt->execute()) {
-                    $message = "Successfully added attendance record!";
-                    $message_type = "success";
-                }
-            } catch (Exception $e) {
-                $message = "Error: " . $e->getMessage();
-                $message_type = "danger";
+        try {
+            $insert_query = "INSERT INTO Attendance (Member_ID, Class_ID, Date, Status) VALUES (?, ?, ?, ?)";
+            $stmt = $mysql_conn->prepare($insert_query);
+            $stmt->bind_param('iiss', $member_id, $class_id, $date, $status);
+            
+            if ($stmt->execute()) {
+                $message = "Successfully added attendance record!";
+                $message_type = "success";
+                // Only clear form on success
+                $_POST = array();
             }
+        } catch (Exception $e) {
+            $message_type = "danger";
+            
+            // Specific error handling for common trigger cases
+            if (strpos($e->getMessage(), 'class is full') !== false) {
+                $message = "Error: Cannot record attendance - class has reached maximum capacity.";
+            } elseif (strpos($e->getMessage(), 'already marked') !== false) {
+                $message = "Error: Attendance already marked for this member in this class today.";
+            } elseif (strpos($e->getMessage(), 'inactive member') !== false) {
+                $message = "Error: Cannot record attendance for inactive member.";
+            } elseif (strpos($e->getMessage(), 'future date') !== false) {
+                $message = "Error: Cannot record attendance for future dates.";
+            } else {
+                $message = "Error recording attendance: " . $e->getMessage();
+            }
+
+            // Keep form values on error
+            $selected_class = $class_id;
+            $selected_member = $member_id;
+            $selected_status = $status;
+            $selected_date = $date;
         }
     }
 }
@@ -92,18 +92,31 @@ $selected_status = isset($_POST['status']) ? $_POST['status'] : 'Attended';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Attendance Triggers - Gym Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .about-trigger-1 {
+            background-color: #F3E5F5;
+            border: 1px solid #E1BEE7;
+            color: #6A1B9A;
+        }
+        .btn-dark-purple {
+            background-color: #6A1B9A;
+            border-color: #6A1B9A;
+            color: white;
+        }
+        .btn-dark-purple:hover {
+            background-color: #4A148C;
+            border-color: #4A148C;
+            color: white;
+        }
+        .alert-error {
+            background-color: #FFEBEE;
+            border-color: #FFCDD2;
+            color: #C62828;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">Gym Management</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Home</a>
-                <a class="nav-link" href="dashboard.php">Tables</a>
-                <a class="nav-link" href="support_index.php">Support</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
         <div class="row justify-content-center">
@@ -113,14 +126,14 @@ $selected_status = isset($_POST['status']) ? $_POST['status'] : 'Attended';
                         <h5 class="card-title mb-0">Test Attendance Triggers</h5>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info">
+                        <div class="alert about-trigger-1">
                             <h6>About the Triggers</h6>
                             <p class="mb-1">1. Overbooking Prevention: Prevents classes from being overbooked by checking against class capacity.</p>
                             <p class="mb-0">2. Duplicate Prevention: Prevents the same member from being marked twice for the same class on the same date.</p>
                         </div>
 
                         <?php if ($message): ?>
-                            <div class="alert alert-<?php echo $message_type; ?>">
+                            <div class="alert <?php echo $message_type == 'danger' ? 'alert-error' : 'alert-success'; ?>">
                                 <?php echo $message; ?>
                             </div>
                         <?php endif; ?>
@@ -170,7 +183,7 @@ $selected_status = isset($_POST['status']) ? $_POST['status'] : 'Attended';
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">Add Attendance</button>
+                                <button type="submit" class="btn btn-dark-purple">Add Attendance</button>
                                 <a href="index.php" class="btn btn-secondary">Back to Dashboard</a>
                             </div>
                         </form>

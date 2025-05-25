@@ -1,16 +1,20 @@
 <?php
 require_once('../config/database.php');
 
-// Get unique usernames with active tickets
+// Get unique usernames with any tickets (both active and resolved)
 $mongodb_conn = get_mongodb_connection();
-$usernames = $mongodb_conn->tickets->distinct('username', ['status' => true]);
+$usernames = $mongodb_conn->tickets->distinct('username');
 
-// Get tickets for selected username or all active tickets
-$filter = ['status' => true];
-if (isset($_GET['username']) && !empty($_GET['username'])) {
-    $filter['username'] = $_GET['username'];
-}
-$tickets = executeMongoQuery($filter, ['sort' => ['created_at' => -1]]);
+// Get tickets for selected username or all tickets
+$username_filter = isset($_GET['username']) && !empty($_GET['username']) ? ['username' => $_GET['username']] : [];
+
+// Get active tickets
+$active_filter = array_merge(['status' => true], $username_filter);
+$active_tickets = executeMongoQuery($active_filter, ['sort' => ['created_at' => -1]]);
+
+// Get resolved tickets
+$resolved_filter = array_merge(['status' => false], $username_filter);
+$resolved_tickets = executeMongoQuery($resolved_filter, ['sort' => ['created_at' => -1]]);
 ?>
 
 <!DOCTYPE html>
@@ -20,17 +24,54 @@ $tickets = executeMongoQuery($filter, ['sort' => ['created_at' => -1]]);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support System - Gym Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .ticket-resolved {
+            background-color: #F5F5F5;
+            border-color: #E0E0E0;
+        }
+        .badge-resolved {
+            background-color: #78909C !important;
+        }
+        /* Active Tickets Section */
+        .active-tickets-header {
+            background-color: #E8F5E9;
+            border-bottom: 1px solid #C8E6C9;
+            color: #2E7D32;
+        }
+        .active-tickets-card {
+            border-color: #C8E6C9;
+        }
+        .active-ticket-item {
+            border-color: #C8E6C9;
+            transition: all 0.3s ease;
+        }
+        .active-ticket-item:hover {
+            background-color: #F1F8F1;
+        }
+        .badge-active {
+            background-color: #2E7D32 !important;
+        }
+        /* Resolved Tickets Section */
+        .resolved-tickets-header {
+            background-color: #ECEFF1;
+            border-bottom: 1px solid #CFD8DC;
+            color: #455A64;
+        }
+        .resolved-tickets-card {
+            border-color: #CFD8DC;
+        }
+        .resolved-ticket-item {
+            background-color: #F5F5F5;
+            border-color: #CFD8DC;
+            transition: all 0.3s ease;
+        }
+        .resolved-ticket-item:hover {
+            background-color: #ECEFF1;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">Gym Management</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Home</a>
-                <a class="nav-link active" href="support_index.php">Support</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -60,18 +101,19 @@ $tickets = executeMongoQuery($filter, ['sort' => ['created_at' => -1]]);
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3>Active Tickets</h3>
+        <!-- Active Tickets -->
+        <div class="card mb-4 active-tickets-card">
+            <div class="card-header active-tickets-header">
+                <h3 class="mb-0">Active Tickets</h3>
             </div>
             <div class="card-body">
-                <?php if (empty($tickets)): ?>
+                <?php if (empty($active_tickets)): ?>
                     <p class="text-muted">No active tickets found.</p>
                 <?php else: ?>
                     <div class="list-group">
-                        <?php foreach ($tickets as $ticket): ?>
+                        <?php foreach ($active_tickets as $ticket): ?>
                             <a href="support_view.php?id=<?php echo $ticket->_id; ?>" 
-                               class="list-group-item list-group-item-action">
+                               class="list-group-item list-group-item-action active-ticket-item">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h5 class="mb-1"><?php echo htmlspecialchars($ticket->username); ?></h5>
                                     <small><?php echo $ticket->created_at; ?></small>
@@ -79,7 +121,36 @@ $tickets = executeMongoQuery($filter, ['sort' => ['created_at' => -1]]);
                                 <p class="mb-1"><?php echo htmlspecialchars($ticket->message); ?></p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small>Comments: <?php echo count($ticket->comments ?? []); ?></small>
-                                    <span class="badge bg-success">Active</span>
+                                    <span class="badge badge-active">Active</span>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Resolved Tickets -->
+        <div class="card resolved-tickets-card">
+            <div class="card-header resolved-tickets-header">
+                <h3 class="mb-0">Resolved Tickets</h3>
+            </div>
+            <div class="card-body">
+                <?php if (empty($resolved_tickets)): ?>
+                    <p class="text-muted">No resolved tickets found.</p>
+                <?php else: ?>
+                    <div class="list-group">
+                        <?php foreach ($resolved_tickets as $ticket): ?>
+                            <a href="support_view.php?id=<?php echo $ticket->_id; ?>" 
+                               class="list-group-item list-group-item-action resolved-ticket-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1"><?php echo htmlspecialchars($ticket->username); ?></h5>
+                                    <small><?php echo $ticket->created_at; ?></small>
+                                </div>
+                                <p class="mb-1"><?php echo htmlspecialchars($ticket->message); ?></p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small>Comments: <?php echo count($ticket->comments ?? []); ?></small>
+                                    <span class="badge badge-resolved">Resolved</span>
                                 </div>
                             </a>
                         <?php endforeach; ?>

@@ -41,8 +41,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST = array();
         }
     } catch (mysqli_sql_exception $e) {
-        $message = "Error: " . $e->getMessage();
         $message_type = "danger";
+        
+        // Specific error handling
+        if (strpos($e->getMessage(), 'Amount must match') !== false) {
+            $message = "Error: Payment amount does not match the member's plan cost. Please verify the amount.";
+        } elseif (strpos($e->getMessage(), 'Member not found') !== false) {
+            $message = "Error: Selected member does not exist or is inactive.";
+        } elseif (strpos($e->getMessage(), 'Invalid payment method') !== false) {
+            $message = "Error: Invalid payment method selected.";
+        } elseif (strpos($e->getMessage(), 'Invalid date') !== false) {
+            $message = "Error: Invalid payment date. Date cannot be in the future.";
+        } else {
+            $message = "Error processing payment: " . $e->getMessage();
+        }
+
+        // Keep form values on error
+        $selected_member = $member_id;
+        $selected_amount = $amount;
+        $selected_date = $date;
+        $selected_payment_method = $payment_method;
     }
 }
 
@@ -57,18 +75,31 @@ $current_date = date('Y-m-d');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Payment - Gym Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .about-procedure-2 {
+            background-color: #BBDEFB;
+            border: 1px solid #90CAF9;
+            color: #1565C0;
+        }
+        .btn-dark-blue {
+            background-color: #1565C0;
+            border-color: #1565C0;
+            color: white;
+        }
+        .btn-dark-blue:hover {
+            background-color: #0D47A1;
+            border-color: #0D47A1;
+            color: white;
+        }
+        .alert-error {
+            background-color: #FFEBEE;
+            border-color: #FFCDD2;
+            color: #C62828;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">Gym Management</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Home</a>
-                <a class="nav-link" href="dashboard.php">Tables</a>
-                <a class="nav-link" href="support_index.php">Support</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
         <div class="row justify-content-center">
@@ -78,8 +109,19 @@ $current_date = date('Y-m-d');
                         <h3>Add Payment</h3>
                     </div>
                     <div class="card-body">
+                        <div class="alert about-procedure-2">
+                            <h6>About the Stored Procedure</h6>
+                            <p class="mb-0">This stored procedure manages the payment processing system by:</p>
+                            <ul class="mb-0">
+                                <li>Recording payment details with proper validation</li>
+                                <li>Ensuring payment amount matches the member's plan cost</li>
+                                <li>Generating a unique payment ID and timestamp</li>
+                                <li>Updating the member's payment history automatically</li>
+                            </ul>
+                        </div>
+
                         <?php if ($message): ?>
-                            <div class="alert alert-<?php echo $message_type; ?>">
+                            <div class="alert <?php echo $message_type == 'danger' ? 'alert-error' : 'alert-success'; ?>">
                                 <?php echo $message; ?>
                             </div>
                         <?php endif; ?>
@@ -120,9 +162,9 @@ $current_date = date('Y-m-d');
                                     <option value="PayPal" <?php echo (isset($_POST['payment_method']) && $_POST['payment_method'] == 'PayPal') ? 'selected' : ''; ?>>PayPal</option>
                                 </select>
                             </div>
-                            <div class="d-flex justify-content-between">
-                                <a href="index.php" class="btn btn-secondary">Back</a>
-                                <button type="submit" class="btn btn-primary">Add Payment</button>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-dark-blue">Add Payment</button>
+                                <a href="index.php" class="btn btn-secondary">Back to Dashboard</a>
                             </div>
                         </form>
                     </div>
