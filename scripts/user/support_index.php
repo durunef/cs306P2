@@ -1,9 +1,16 @@
 <?php
 require_once('../config/database.php');
 
-// Get all active tickets
-$query = new MongoDB\Driver\Query(['status' => true], ['sort' => ['created_at' => -1]]);
-$tickets = executeMongoQuery($query);
+// Get unique usernames with active tickets
+$mongodb_conn = get_mongodb_connection();
+$usernames = $mongodb_conn->tickets->distinct('username', ['status' => true]);
+
+// Get tickets for selected username or all active tickets
+$filter = ['status' => true];
+if (isset($_GET['username']) && !empty($_GET['username'])) {
+    $filter['username'] = $_GET['username'];
+}
+$tickets = executeMongoQuery($filter, ['sort' => ['created_at' => -1]]);
 ?>
 
 <!DOCTYPE html>
@@ -31,6 +38,28 @@ $tickets = executeMongoQuery($query);
             <a href="support_create.php" class="btn btn-primary">Create New Ticket</a>
         </div>
 
+        <!-- Username Filter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <label for="username" class="col-form-label">Filter by Username:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="username" id="username" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Users</option>
+                            <?php foreach ($usernames as $username): ?>
+                                <option value="<?php echo htmlspecialchars($username); ?>"
+                                    <?php echo (isset($_GET['username']) && $_GET['username'] === $username) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($username); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <h3>Active Tickets</h3>
@@ -45,10 +74,13 @@ $tickets = executeMongoQuery($query);
                                class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h5 class="mb-1"><?php echo htmlspecialchars($ticket->username); ?></h5>
-                                    <small><?php echo date('Y-m-d H:i', strtotime($ticket->created_at)); ?></small>
+                                    <small><?php echo $ticket->created_at; ?></small>
                                 </div>
                                 <p class="mb-1"><?php echo htmlspecialchars($ticket->message); ?></p>
-                                <small>Comments: <?php echo count($ticket->comments); ?></small>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small>Comments: <?php echo count($ticket->comments ?? []); ?></small>
+                                    <span class="badge bg-success">Active</span>
+                                </div>
                             </a>
                         <?php endforeach; ?>
                     </div>

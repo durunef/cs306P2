@@ -1,37 +1,44 @@
 <?php
-require_once('../config/database.php');
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+require_once '../config/database.php';
 
 $message = '';
-$error = '';
+$message_type = '';
 
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username']);
-    $ticket_message = trim($_POST['message']);
-    
-    if (empty($username) || empty($ticket_message)) {
-        $error = "Please fill in all fields.";
-    } else {
-        // Create new ticket document
-        $ticket = [
-            'username' => $username,
-            'message' => $ticket_message,
-            'created_at' => date('Y-m-d H:i:s'),
-            'status' => true,
-            'comments' => []
-        ];
-        
-        // Insert ticket into MongoDB
-        $bulk = new MongoDB\Driver\BulkWrite;
-        $bulk->insert($ticket);
-        
+    if (isset($_POST['username']) && isset($_POST['message']) && !empty($_POST['username']) && !empty($_POST['message'])) {
         try {
-            $mongodb_conn->executeBulkWrite('GymDB.tickets', $bulk);
-            $message = "Ticket created successfully!";
-            // Redirect after 2 seconds
-            header("refresh:2;url=support_index.php");
-        } catch (MongoDB\Driver\Exception\Exception $e) {
-            $error = "Error creating ticket: " . $e->getMessage();
+            // Create ticket document with correct schema
+            $ticket = [
+                'username' => $_POST['username'],
+                'message' => $_POST['message'],
+                'status' => true,
+                'created_at' => date('Y-m-d H:i:s'),
+                'comments' => []
+            ];
+
+            // Insert into MongoDB
+            $result = executeMongoWrite($ticket);
+
+            if ($result->getInsertedId()) {
+                $message = "Support ticket created successfully!";
+                $message_type = "success";
+                $ticket_id = (string)$result->getInsertedId();
+                // Clear form
+                $_POST = array();
+            } else {
+                throw new Exception("Failed to create ticket");
+            }
+        } catch (Exception $e) {
+            $message = "Error: " . $e->getMessage();
+            $message_type = "danger";
         }
+    } else {
+        $message = "Error: Please fill in all required fields";
+        $message_type = "danger";
     }
 }
 ?>
@@ -55,38 +62,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </nav>
 
-    <div class="container mt-5">
+    <div class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Create Support Ticket</h3>
+                <?php if ($message && $message_type === 'success' && isset($ticket_id)): ?>
+                    <div class="alert alert-success">
+                        <?php echo $message; ?>
+                        <div class="mt-3">
+                            <a href="support_view.php?id=<?php echo $ticket_id; ?>" class="btn btn-primary me-2">View Ticket</a>
+                            <a href="support_create.php" class="btn btn-secondary">Create Another Ticket</a>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <?php if ($message): ?>
-                            <div class="alert alert-success"><?php echo $message; ?></div>
-                        <?php endif; ?>
-                        
-                        <?php if ($error): ?>
-                            <div class="alert alert-danger"><?php echo $error; ?></div>
-                        <?php endif; ?>
+                <?php else: ?>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Create Support Ticket</h5>
+                        </div>
+                        <div class="card-body">
+                            <?php if ($message): ?>
+                                <div class="alert alert-<?php echo $message_type; ?>">
+                                    <?php echo $message; ?>
+                                </div>
+                            <?php endif; ?>
 
-                        <form method="POST" action="">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="message" class="form-label">Message</label>
-                                <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <a href="support_index.php" class="btn btn-secondary">Back to Tickets</a>
-                                <button type="submit" class="btn btn-primary">Create Ticket</button>
-                            </div>
-                        </form>
+                            <form method="POST" action="">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" 
+                                           required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">Message</label>
+                                    <textarea class="form-control" id="message" name="message" rows="5" required><?php 
+                                        echo isset($_POST['message']) ? htmlspecialchars($_POST['message']) : ''; 
+                                    ?></textarea>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">Create Ticket</button>
+                                    <a href="support_index.php" class="btn btn-secondary">Back to Support</a>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

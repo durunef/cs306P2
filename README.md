@@ -50,7 +50,7 @@ A comprehensive gym management system with member registration, payment processi
    ```
 
 4. **Configure Database Connection**
-   - Update MySQL credentials in `scripts/config/db_config.php`
+   - Update MySQL credentials in `scripts/config/database.php`
    - Update MongoDB connection string if needed
 
 5. **Web Server Setup**
